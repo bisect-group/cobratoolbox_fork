@@ -1,0 +1,51 @@
+name: MATLAB MLX to HTML Conversion
+
+# Trigger the workflow on push events but only for the main branch
+on:
+  push:
+    branches:
+      - gh-pages
+    paths:
+    - '**.mlx'
+
+# The jobs key is a collection of the jobs to run
+jobs:
+  convert-mlx-to-html:
+    # The type of runner that the job will run on
+    runs-on: self-hosted
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    - name: Manual Repository Checkout
+      run: |
+        # Remove the cobratoolbox_repo directory if it exists, then recreate it
+        rm -rf cobratoolbox_repo
+        mkdir cobratoolbox_repo  
+    
+        # Clone the repository into the cobratoolbox_repo directory
+        git clone https://github.com/opencobra/cobratoolbox.git cobratoolbox_repo
+        cd cobratoolbox_repo
+
+    - name: Get Changed MLX Files
+      id: getfile
+      run: |
+          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.mlx' || echo "")
+          echo "Changed MLX files: $changed_files"
+          echo "mlx_file=$changed_files" >> $GITHUB_ENV
+
+    - name: Print Changed MLX Files
+      if: steps.getfile.outputs.mlx_file != ''
+      run: echo "The following MLX files have been changed ${{ env.mlx_file  }}"
+
+
+          
+    - name: Commit and Push New File
+      run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add .
+          git commit -m "Add new HTML file" || echo "No changes to commit"
+          git push -f origin gh-pages
+
+
+
