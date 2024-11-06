@@ -2,8 +2,8 @@ name: Code Coverage
 on:
   push:
     branches: [develop]
-  pull_request:
-    branches: [develop]
+  pull_request: 
+    branches: [develop] # on pr
 jobs:
   test:
     runs-on: ubuntu-latest
