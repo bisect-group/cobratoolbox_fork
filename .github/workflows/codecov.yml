@@ -1,32 +1,37 @@
-name: Code Cov CI
-
+name: Code Coverage
 on:
   push:
-    branches: [develop]  # Trigger workflow on push to develop
+    branches: [develop]
   pull_request:
     branches: [develop]
-
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
       
-      # Set up MATLAB
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v1
         with:
-          release: R2022a  # Specify the MATLAB version
-
-      # Run only the specific test_myfunction.m file from the /tests directory
-      - name: Run MATLAB tests and generate coverage
-        run: |
-          matlab -batch "import matlab.unittest.TestRunner; import matlab.unittest.plugins.CodeCoveragePlugin; import matlab.unittest.plugins.codecoverage.CoberturaFormat; runner = TestRunner.withTextOutput; runner.addPlugin(CodeCoveragePlugin.forFolder('src', 'Producing', CoberturaFormat('coverage.xml'))); results = runner.run(testsuite('test/test_myfunction.m')); assertSuccess(results);"
+          release: R2022a
       
-      # Upload coverage report to Codecov
-      - name: Upload coverage to Codecov
+      - name: Install MOcov
         run: |
-          bash <(curl -s https://codecov.io/bash) -f coverage.xml -F matlab
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          git clone https://github.com/MOxUnit/MOcov.git /opt/MOcov
+          sudo chmod -R 755 /opt/MOcov
+      
+      - name: Verify MATLAB installation
+        run: matlab -batch "version"
+      
+      - name: Run MATLAB tests
+        run: |
+          matlab -batch "addpath(genpath(pwd)); run_coverage_tests"
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: matlab
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+          comment: true
